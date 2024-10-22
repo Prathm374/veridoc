@@ -1,77 +1,122 @@
 const Certificate = require('../models/Certificate');
 const VerificationHistory = require('../models/VerificationHistory');
-const excelParser = require('../utils/excelParser');
+const { parseExcel, saveCertificates } = require('../utils/excelParser');
+const { generatePDF } = require('../utils/pdfGenerator');
 
+// Update the uploadCertificates function
 exports.uploadCertificates = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const certificates = await excelParser.parseCertificates(req.file.buffer);
-    await Certificate.insertMany(certificates);
+    const certificates = parseExcel(req.file);
+    await saveCertificates(certificates);
 
     res.status(200).json({ message: 'Certificates uploaded successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Error uploading certificates', error: error.message });
+    console.error('Error uploading certificates:', error);
+    res.status(500).json({ message: 'Error uploading certificates: ' + error.message });
+  }
+};
+
+// Update the getCertificate function
+exports.getCertificate = async (req, res) => {
+  try {
+    const certificate = await Certificate.findOne({ 
+      $or: [
+        { _id: req.params.id },
+        { certificateNumber: req.params.id }
+      ]
+    });
+
+    if (!certificate) {
+      return res.status(404).json({ message: 'Certificate not found' });
+    }
+
+    await VerificationHistory.create({
+      certificateId: certificate._id,
+      verifiedBy: req.ip
+    });
+
+    res.status(200).json(certificate);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
 
 exports.getCertificate = async (req, res) => {
   try {
-    const certificate = await Certificate.findOne({ id: req.params.id });
+    const certificate = await Certificate.findOne({ 
+      _id: req.params.id,
+      studentId: req.user.studentId
+    });
+
     if (!certificate) {
       return res.status(404).json({ message: 'Certificate not found' });
     }
 
-    // Record the verification attempt
     await VerificationHistory.create({
-      certificateId: certificate.id,
-      verifiedOn: new Date(),
-      status: 'Verified'
+      certificateId: certificate._id,
+      verifiedBy: req.ip
     });
 
     res.status(200).json(certificate);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching certificate', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
 exports.downloadCertificate = async (req, res) => {
   try {
-    const certificate = await Certificate.findOne({ id: req.params.id });
+    const certificate = await Certificate.findOne({ 
+      _id: req.params.id,
+      studentId: req.user.studentId
+    });
+
     if (!certificate) {
       return res.status(404).json({ message: 'Certificate not found' });
     }
 
-    // TODO: Implement actual PDF generation logic here
-    const pdfBuffer = Buffer.from('Dummy PDF content');
+    const pdfBuffer = await generatePDF(certificate);
 
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename=certificate_${certificate.id}.pdf`);
+    res.setHeader('Content-Disposition', `attachment; filename=${certificate.certificateNumber}.pdf`);
     res.send(pdfBuffer);
   } catch (error) {
-    res.status(500).json({ message: 'Error downloading certificate', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
-exports.getAllCertificates = async (req, res) => {
+exports.getVerificationHistory = async (req, res) => {
   try {
-    const certificates = await Certificate.find();
-    res.status(200).json(certificates);
+    const certificates = await Certificate.find({ studentId: req.user.studentId });
+    const certificateIds = certificates.map(cert => cert._id);
+
+    const history = await VerificationHistory.find({
+      certificateId: { $in: certificateIds }
+    }).populate('certificateId');
+
+    res.status(200).json(history);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching certificates', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
+// Add this function to the existing controller
 exports.deleteCertificate = async (req, res) => {
   try {
-    const result = await Certificate.deleteOne({ id: req.params.id });
-    if (result.deletedCount === 0) {
-      return res.status(404).json({ message: 'Certificate not found' });
+    const certificate = await Certificate.findOneAndDelete({ 
+      _id: req.params.id,
+      studentId: req.user.studentId 
+    });
+
+    if (!certificate) {
+      return res.status(404).json({ message: 'Certificate not found or you do not have permission to delete it' });
     }
+
     res.status(200).json({ message: 'Certificate deleted successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting certificate', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };

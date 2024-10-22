@@ -1,15 +1,14 @@
 const express = require('express');
-const router = express.Router();
+const { protect } = require('../middleware/authMiddleware');
 const certificateController = require('../controllers/certificateController');
-const verificationHistoryController = require('../controllers/verificationHistoryController');
-const { protect, restrictTo } = require('../middleware/authMiddleware');
-const upload = require('../utils/upload');
 
-router.post('/upload', protect, restrictTo('admin'), upload.single('file'), certificateController.uploadCertificates);
-router.get('/:id', certificateController.getCertificate);
-router.get('/:id/download', certificateController.downloadCertificate);
-router.get('/', protect, restrictTo('admin'), certificateController.getAllCertificates);
-router.delete('/:id', protect, restrictTo('admin'), certificateController.deleteCertificate);
-router.get('/verification/history', protect, verificationHistoryController.getVerificationHistory);
+const router = express.Router();
+
+router.post('/upload', protect, certificateController.uploadCertificates);
+router.get('/', protect, certificateController.getCertificates);
+router.get('/:id', protect, certificateController.getCertificate);
+router.get('/:id/download', protect, certificateController.downloadCertificate);
+router.delete('/:id', protect, certificateController.deleteCertificate);
+router.get('/verification/history', protect, certificateController.getVerificationHistory);
 
 module.exports = router;

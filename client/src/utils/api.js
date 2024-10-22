@@ -36,14 +36,14 @@ export const uploadCertificates = (file) => {
   });
 };
 
+export const getCertificates = () => api.get('/certificates');
+
 export const getCertificate = (id) => api.get(`/certificates/${id}`);
 
 export const downloadCertificate = (id) => api.get(`/certificates/${id}/download`, { responseType: 'blob' });
 
-export const getCertificates = () => api.get('/certificates');
-
-export const deleteCertificate = (id) => api.delete(`/certificates/${id}`);
-
 export const getVerificationHistory = () => api.get('/certificates/verification/history');
+// Add this function to the existing api.js file
+export const deleteCertificate = (id) => api.delete(`/certificates/${id}`);
 
 export default api;

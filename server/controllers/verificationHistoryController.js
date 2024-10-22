@@ -1,10 +1,17 @@
 const VerificationHistory = require('../models/VerificationHistory');
+const Certificate = require('../models/Certificate');
 
 exports.getVerificationHistory = async (req, res) => {
   try {
-    const history = await VerificationHistory.find().sort({ verifiedOn: -1 }).limit(10);
+    const certificates = await Certificate.find({ studentId: req.user.studentId });
+    const certificateIds = certificates.map(cert => cert._id);
+
+    const history = await VerificationHistory.find({
+      certificateId: { $in: certificateIds }
+    }).populate('certificateId');
+
     res.status(200).json(history);
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching verification history', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
