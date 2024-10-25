@@ -3,7 +3,6 @@ const VerificationHistory = require('../models/VerificationHistory');
 const { parseExcel, saveCertificates } = require('../utils/excelParser');
 const { generatePDF } = require('../utils/pdfGenerator');
 
-// Update the uploadCertificates function
 exports.uploadCertificates = async (req, res) => {
   try {
     if (!req.file) {
@@ -20,26 +19,10 @@ exports.uploadCertificates = async (req, res) => {
   }
 };
 
-// Update the getCertificate function
-exports.getCertificate = async (req, res) => {
+exports.getCertificates = async (req, res) => {
   try {
-    const certificate = await Certificate.findOne({ 
-      $or: [
-        { _id: req.params.id },
-        { certificateNumber: req.params.id }
-      ]
-    });
-
-    if (!certificate) {
-      return res.status(404).json({ message: 'Certificate not found' });
-    }
-
-    await VerificationHistory.create({
-      certificateId: certificate._id,
-      verifiedBy: req.ip
-    });
-
-    res.status(200).json(certificate);
+    const certificates = await Certificate.find({ studentId: req.user.studentId });
+    res.status(200).json(certificates);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -48,8 +31,10 @@ exports.getCertificate = async (req, res) => {
 exports.getCertificate = async (req, res) => {
   try {
     const certificate = await Certificate.findOne({ 
-      _id: req.params.id,
-      studentId: req.user.studentId
+      $or: [
+        { _id: req.params.id },
+        { certificateNumber: req.params.id }
+      ]
     });
 
     if (!certificate) {
@@ -103,7 +88,6 @@ exports.getVerificationHistory = async (req, res) => {
   }
 };
 
-// Add this function to the existing controller
 exports.deleteCertificate = async (req, res) => {
   try {
     const certificate = await Certificate.findOneAndDelete({ 
