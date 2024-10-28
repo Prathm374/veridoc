@@ -45,28 +45,37 @@ function Layout({ children }) {
     navigate('/login');
   };
 
-  const getHomeLink = () => {
-    if (!isLoggedIn) return '/login';
-    return userRole === 'admin' ? '/admin' : '/student';
-  };
-
   return (
     <div>
       <Header>
         <Nav>
           <div>
-            <NavLink to={getHomeLink()}>Home</NavLink>
-            {isLoggedIn && <NavLink to="/profile">Profile</NavLink>}
-            {userRole === 'admin' && <NavLink to="/admin">Admin Dashboard</NavLink>}
+            {!isLoggedIn && <NavLink to="/">Home</NavLink>}
+            {isLoggedIn && userRole === 'student' && (
+              <>
+                <NavLink to="/student">Student Portal</NavLink>
+                <NavLink to="/profile">Profile</NavLink>
+              </>
+            )}
+            {isLoggedIn && userRole === 'admin' && (
+              <>
+                <NavLink to="/admin">Dashboard</NavLink>
+                {/* <NavLink to="/verification-history">Verification History</NavLink> */}
+                <NavLink to="/profile">Profile</NavLink>
+              </>
+            )}
           </div>
-          {isLoggedIn ? (
-            <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
-          ) : (
-            <div>
-              <NavLink to="/login">Login</NavLink>
-              <NavLink to="/signup">Sign Up</NavLink>
-            </div>
-          )}
+          <div>
+            {isLoggedIn ? (
+              <LogoutButton onClick={handleLogout}>Logout</LogoutButton>
+            ) : (
+              <>
+                <NavLink to="/login">Login</NavLink>
+                <NavLink to="/signup">Sign Up</NavLink>
+                <NavLink to="/admin-login">Admin Login</NavLink>
+              </>
+            )}
+          </div>
         </Nav>
       </Header>
       <main>{children}</main>

@@ -29,12 +29,16 @@ const certificateSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Certificate number is required'],
     unique: true
-  },
-  status: {
-    type: String,
-    enum: ['active', 'revoked'],
-    default: 'active'
   }
+}, { timestamps: true });
+
+certificateSchema.pre('save', async function(next) {
+  if (!this.certificateNumber) {
+    const timestamp = Date.now().toString().slice(-6);
+    const randomPart = Math.random().toString(36).substring(2, 5).toUpperCase();
+    this.certificateNumber = `CERT-${timestamp}-${randomPart}`;
+  }
+  next();
 });
 
 const Certificate = mongoose.model('Certificate', certificateSchema);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getCertificates, downloadCertificate } from '../utils/api';
+import { getCertificates, downloadCertificate, getVerificationHistory } from '../utils/api';
 import styled from 'styled-components';
 import { colors } from '../styles/colors';
 
@@ -33,15 +33,30 @@ const DownloadButton = styled.button`
   }
 `;
 
+const HistoryList = styled.ul`
+  list-style-type: none;
+  padding: 0;
+  margin-top: 1rem;
+`;
+
+const HistoryItem = styled.li`
+  background-color: ${colors.lightGray};
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+`;
+
 function formatDate(dateString) {
   return new Date(dateString).toLocaleDateString();
 }
 
 function StudentPortal() {
   const [certificates, setCertificates] = useState([]);
+  const [verificationHistory, setVerificationHistory] = useState([]);
 
   useEffect(() => {
     fetchCertificates();
+    fetchVerificationHistory();
   }, []);
 
   const fetchCertificates = async () => {
@@ -50,6 +65,15 @@ function StudentPortal() {
       setCertificates(response.data);
     } catch (error) {
       console.error('Error fetching certificates:', error);
+    }
+  };
+
+  const fetchVerificationHistory = async () => {
+    try {
+      const response = await getVerificationHistory();
+      setVerificationHistory(response.data);
+    } catch (error) {
+      console.error('Error fetching verification history:', error);
     }
   };
 
@@ -74,8 +98,6 @@ function StudentPortal() {
           <CertificateItem key={cert._id}>
             <h3>{cert.course}</h3>
             <p>Certificate Number: {cert.certificateNumber}</p>
-            <p>Start Date: {formatDate(cert.startDate)}</p>
-            <p>End Date: {formatDate(cert.endDate)}</p>
             <p>Issue Date: {formatDate(cert.issueDate)}</p>
             <DownloadButton onClick={() => handleDownload(cert._id)}>
               Download Certificate
@@ -83,6 +105,17 @@ function StudentPortal() {
           </CertificateItem>
         ))}
       </CertificateList>
+
+      {/* <h2>Verification History</h2>
+      <HistoryList>
+        {verificationHistory.map((history) => (
+          <HistoryItem key={history._id}>
+            <p>Certificate: {history.certificateId.certificateNumber}</p>
+            <p>Verified At: {formatDate(history.verifiedAt)}</p>
+            <p>Verified By: {history.verifiedBy}</p>
+          </HistoryItem>
+        ))}
+      </HistoryList> */}
     </PortalContainer>
   );
 }

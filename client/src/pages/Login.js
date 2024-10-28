@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { colors } from '../styles/colors';
-import api from '../utils/api';
+import { login } from '../utils/api';
 
 const LoginContainer = styled.div`
   display: flex;
@@ -10,6 +10,7 @@ const LoginContainer = styled.div`
   align-items: center;
   justify-content: center;
   height: 100vh;
+  background-color: ${colors.background};
 `;
 
 const LoginForm = styled.form`
@@ -24,7 +25,7 @@ const Input = styled.input`
   width: 100%;
   padding: 0.5rem;
   margin-bottom: 1rem;
-  border: 1px solid #ccc;
+  border: 1px solid ${colors.secondary};
   border-radius: 4px;
 `;
 
@@ -42,7 +43,7 @@ const Button = styled.button`
 `;
 
 const ErrorMessage = styled.p`
-  color: ${colors.accent};
+  color: ${colors.error};
   margin-bottom: 1rem;
 `;
 
@@ -55,10 +56,14 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post('/auth/login', { email, password });
+      const response = await login(email, password);
       localStorage.setItem('token', response.data.token);
-      localStorage.setItem('userRole', response.data.role);
-      navigate(response.data.role === 'admin' ? '/admin' : '/student');
+      localStorage.setItem('userRole', response.data.data.user.role);
+      if (response.data.data.user.role === 'student') {
+        navigate('/student');
+      } else if (response.data.data.user.role === 'admin') {
+        navigate('/admin');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred');
     }
@@ -85,9 +90,6 @@ function Login() {
         />
         <Button type="submit">Login</Button>
       </LoginForm>
-      <p>
-        Don't have an account? <Link to="/signup">Sign up</Link>
-      </p>
     </LoginContainer>
   );
 }
